@@ -1,6 +1,65 @@
 import Head from "next/head";
+import { useCallback, useEffect, useState } from "react";
+import { axiosInstance } from "../utils/http";
 
 const Home = () => {
+  const [users, setUsers] = useState<any>([]);
+  const [posts, setPosts] = useState<any>([]);
+  const [comments, setComments] = useState<any>([]);
+
+  const [data, setData] = useState<any>([]);
+
+  const [loading, setLoading] = useState(false);
+  const [isError, setError] = useState(false);
+
+  const fetchItems = useCallback(() => {
+    setLoading(true);
+    axiosInstance
+      .get("/users")
+      .then((res) => {
+        setUsers(res.data);
+      })
+      .catch((err) => {
+        console.log({ err });
+      });
+
+    axiosInstance
+      .get("/comments")
+      .then((res) => {
+        setComments(res.data);
+      })
+      .catch((err) => {
+        console.log({ err });
+      });
+
+    axiosInstance
+      .get("/posts")
+      .then((res) => {
+        setPosts(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(true);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    void fetchItems();
+  }, []);
+
+  useEffect(() => {
+    const result = [];
+    posts.forEach((post) => {
+      users.forEach((user) => {
+        if (user.id === post.userId) {
+          result.push({ ...post, ...user });
+        }
+      });
+    });
+    setData(result);
+  }, [posts, users]);
+
   return (
     <>
       <Head>
@@ -9,7 +68,34 @@ const Home = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="text-4xl">hello</div>
+      <div className="container mx-auto">
+        <table className="table-auto">
+          <thead>
+            <tr className="border">
+              <th>Title</th>
+              <th>Body</th>
+              <th>Name</th>
+              <th>Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <div>Loading data</div>
+            ) : isError ? <div>
+              Oh no! we have a problem
+            </div>:(
+              data.map((post) => (
+                <tr key={post.id}>
+                  <td>{post.title}</td>
+                  <td>{post.body}</td>
+                  <td>{post.name}</td>
+                  <td>{post.email}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 };
